@@ -1,0 +1,27 @@
+{
+  "name": "elite-phone",
+  "version": "0.1.0",
+  "description": "Parsing, validacion y formateo de numeros telefonicos internacionales, con core nativo en C++.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "generate:metadata": "tsx scripts/generate-metadata.ts",
+    "generate:native-metadata": "tsx scripts/generate-native-metadata.ts",
+    "codegen": "npm run generate:metadata && npm run generate:native-metadata",
+    "build:native": "node-gyp rebuild",
+    "build:ts": "tsc -p tsconfig.json",
+    "build": "npm run build:native && npm run build:ts",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "fast-xml-parser": "^4.5.0",
+    "node-addon-api": "^8.0.0",
+    "node-gyp": "^10.0.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  },
+  "gypfile": true
+}
