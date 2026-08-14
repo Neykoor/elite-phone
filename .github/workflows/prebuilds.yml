@@ -1,0 +1,109 @@
+name: prebuilds
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+jobs:
+  codegen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run codegen
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated-metadata
+          path: |
+            native/generated/metadata.gen.cc
+            native/generated/metadata.gen.h
+
+  linux:
+    needs: codegen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-metadata
+          path: native/generated
+      - run: npm ci
+      - run: npx prebuildify-cross --napi --strip -i linux-x64 -i linux-arm64 -i linux-musl-x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prebuilds-linux
+          path: prebuilds
+
+  macos:
+    needs: codegen
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-metadata
+          path: native/generated
+      - run: npm ci
+      - run: npx prebuildify --napi --strip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prebuilds-${{ matrix.os }}
+          path: prebuilds
+
+  windows:
+    needs: codegen
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-metadata
+          path: native/generated
+      - run: npm ci
+      - run: npx prebuildify --napi --strip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prebuilds-windows
+          path: prebuilds
+
+  publish:
+    needs: [linux, macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-metadata
+          path: native/generated
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: prebuilds-*
+          path: prebuilds-collected
+          merge-multiple: true
+      - run: mkdir -p prebuilds && cp -r prebuilds-collected/* prebuilds/
+      - run: npm ci
+      - run: npm run build:ts
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
