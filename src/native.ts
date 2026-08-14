@@ -1,6 +1,9 @@
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export interface NativeParseResult {
   valid: boolean;
@@ -50,7 +53,8 @@ let cachedAddon: NativeAddon | undefined;
 
 export function loadNativeAddon(): NativeAddon {
   if (!cachedAddon) {
-    cachedAddon = require("../build/Release/elite_phone_native.node") as NativeAddon;
+    const loadPrebuild = require("node-gyp-build") as (dir: string) => NativeAddon;
+    cachedAddon = loadPrebuild(packageRoot);
   }
   return cachedAddon;
 }
