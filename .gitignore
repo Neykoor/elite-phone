@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+data/metadata.json
+native/generated/metadata.gen.cc
+native/generated/metadata.gen.h
+*.node
+.DS_Store
